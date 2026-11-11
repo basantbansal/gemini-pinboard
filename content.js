@@ -574,7 +574,7 @@
       white-space: nowrap;
     }
 
-    /* Jump Guide Flash Line */
+    /* Jump Guide Flash Line (Light Blue Glow & Arrival Sync) */
     .jump-flash-line {
       position: fixed;
       left: 0;
@@ -584,30 +584,41 @@
       z-index: 2147483645;
       background: linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.85) 20%,
-        rgba(255, 255, 255, 0.85) 80%,
-        rgba(255, 255, 255, 0) 100%
+        rgba(147, 197, 253, 0) 0%,
+        rgba(147, 197, 253, 0.75) 15%,
+        rgba(191, 219, 254, 1) 50%,
+        rgba(147, 197, 253, 0.75) 85%,
+        rgba(147, 197, 253, 0) 100%
       );
-      box-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 24px rgba(255, 255, 255, 0.2);
-      animation: guidePulse 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      box-shadow: 0 0 10px rgba(147, 197, 253, 0.7), 0 0 20px rgba(96, 165, 250, 0.35);
+      opacity: 0.85;
+      transform: scaleY(1);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
     }
 
-    @keyframes guidePulse {
+    .jump-flash-line.arrived {
+      animation: arrivalPulse 2.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes arrivalPulse {
       0% {
         opacity: 1;
-        transform: scaleY(2.2);
+        transform: scaleY(2.4);
+        box-shadow: 0 0 16px rgba(147, 197, 253, 0.95), 0 0 32px rgba(96, 165, 250, 0.6);
       }
-      40% {
+      15% {
         opacity: 1;
         transform: scaleY(1);
+        box-shadow: 0 0 12px rgba(147, 197, 253, 0.8), 0 0 24px rgba(96, 165, 250, 0.4);
       }
-      80% {
-        opacity: 0.8;
+      75% { /* Stays solid for ~1.7s after arrival */
+        opacity: 0.95;
+        transform: scaleY(1);
+        box-shadow: 0 0 10px rgba(147, 197, 253, 0.7), 0 0 20px rgba(96, 165, 250, 0.35);
       }
-      100% {
+      100% { /* Smoothly fades out over final 0.6s */
         opacity: 0;
-        transform: scaleY(0.5);
+        transform: scaleY(0.4);
       }
     }
 
@@ -1061,51 +1072,129 @@
     };
   }
 
-  function jumpToPin(pin) {
-    const scrollContainer = getScrollContainer();
-    const viewportHeight = window.innerHeight;
+  let activeNavigationCleanup = null;
+  let activeFlashAnim = null;
 
-    let matchedElement = null;
-    if (pin.fingerprint) {
-      const candidates = scrollContainer.querySelectorAll(
-        'p, li, code, pre, h1, h2, h3, h4, h5, h6, span, blockquote, div'
-      );
-      for (const el of candidates) {
-        if (el.clientHeight < 600 && el.textContent) {
-          const txt = el.textContent.trim().slice(0, 60);
-          if (txt === pin.fingerprint) {
-            matchedElement = el;
-            break;
-          }
+  function findPinElement(pin) {
+    if (!pin || !pin.fingerprint) return null;
+    const scrollContainer = getScrollContainer();
+    const candidates = scrollContainer.querySelectorAll(
+      'p, li, code, pre, h1, h2, h3, h4, h5, h6, blockquote, div, span, message-content, [class*="content"]'
+    );
+    for (const el of candidates) {
+      if (el.clientHeight > 0 && el.clientHeight < 600 && el.textContent) {
+        const txt = el.textContent.trim().slice(0, 60);
+        if (txt === pin.fingerprint) {
+          return el;
         }
       }
     }
+    return null;
+  }
 
-    let targetScrollTop;
-    let flashAbsoluteY;
+  function jumpToPin(pin) {
+    if (activeNavigationCleanup) {
+      activeNavigationCleanup();
+      activeNavigationCleanup = null;
+    }
+
+    const scrollContainer = getScrollContainer();
+    const viewportHeight = window.innerHeight;
+
+    // 1. Check if the element is currently rendered in the DOM
+    const matchedElement = findPinElement(pin);
 
     if (matchedElement) {
       const elRect = matchedElement.getBoundingClientRect();
       const scRect = scrollContainer.getBoundingClientRect();
-      const elementTopInScrollContainer = elRect.top - scRect.top + scrollContainer.scrollTop;
-      flashAbsoluteY = elementTopInScrollContainer + (pin.offsetWithinElement || 0);
-      targetScrollTop = flashAbsoluteY - viewportHeight * 0.25;
-    } else {
-      flashAbsoluteY = pin.absoluteY;
-      targetScrollTop = pin.absoluteY - viewportHeight * 0.25;
+      const elementTop = elRect.top - scRect.top + scrollContainer.scrollTop;
+      const flashAbsoluteY = elementTop + (pin.offsetWithinElement || 0);
+      const targetScrollTop = Math.max(0, flashAbsoluteY - viewportHeight * 0.25);
+
+      scrollContainer.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+      });
+
+      flashHorizontalLine(flashAbsoluteY, matchedElement);
+      return;
     }
 
+    // 2. Element NOT in current DOM (Gemini closed/virtualized older chat above)
+    // Scroll towards top (or bottom) to trigger Gemini sliding window loader
+    const isAbove = (pin.absoluteY || 0) < scrollContainer.scrollTop;
+    const initialTargetScrollTop = isAbove ? 0 : scrollContainer.scrollHeight;
+
     scrollContainer.scrollTo({
-      top: Math.max(0, targetScrollTop),
+      top: initialTargetScrollTop,
       behavior: 'smooth'
     });
 
-    // Flash a horizontal guide line across chat at that exact vertical spot for 1.5 seconds
-    flashHorizontalLine(flashAbsoluteY);
+    flashHorizontalLine(pin.absoluteY, null);
+
+    // Watch for Gemini loading older chat turns into the DOM
+    let isCleanedUp = false;
+    let observer = null;
+    let pollInterval = null;
+    let timeoutId = null;
+
+    const cleanup = () => {
+      if (isCleanedUp) return;
+      isCleanedUp = true;
+      if (observer) observer.disconnect();
+      if (pollInterval) clearInterval(pollInterval);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (activeNavigationCleanup === cleanup) {
+        activeNavigationCleanup = null;
+      }
+    };
+    activeNavigationCleanup = cleanup;
+
+    const checkAndJump = () => {
+      if (isCleanedUp) return;
+      const foundEl = findPinElement(pin);
+      if (foundEl) {
+        // Element has just been loaded into DOM by Gemini!
+        cleanup();
+        const elRect = foundEl.getBoundingClientRect();
+        const scRect = scrollContainer.getBoundingClientRect();
+        const liveTop = elRect.top - scRect.top + scrollContainer.scrollTop;
+        const liveAbsoluteY = liveTop + (pin.offsetWithinElement || 0);
+        const liveTargetScrollTop = Math.max(0, liveAbsoluteY - viewportHeight * 0.25);
+
+        scrollContainer.scrollTo({
+          top: liveTargetScrollTop,
+          behavior: 'smooth'
+        });
+
+        flashHorizontalLine(liveAbsoluteY, foundEl);
+      } else if (isAbove && scrollContainer.scrollTop > 40) {
+        // Continue triggering top loader if multi-step paging is needed
+        scrollContainer.scrollTop = 0;
+      }
+    };
+
+    observer = new MutationObserver(() => {
+      checkAndJump();
+    });
+
+    try {
+      observer.observe(scrollContainer, { childList: true, subtree: true });
+    } catch (_) {}
+
+    pollInterval = setInterval(checkAndJump, 250);
+
+    timeoutId = setTimeout(() => {
+      cleanup();
+    }, 9000);
   }
 
-  function flashHorizontalLine(flashAbsoluteY) {
-    // Remove previous flash line if active
+  function flashHorizontalLine(flashAbsoluteY, targetElement) {
+    if (activeFlashAnim) {
+      cancelAnimationFrame(activeFlashAnim);
+      activeFlashAnim = null;
+    }
+
     const oldFlash = shadow.querySelector('.jump-flash-line');
     if (oldFlash) oldFlash.remove();
 
@@ -1117,24 +1206,62 @@
     flash.style.left = `${chatBounds.left}px`;
     flash.style.width = `${chatBounds.width}px`;
 
-    const startTime = performance.now();
-    const duration = 1500;
+    let hasArrived = false;
+    let arrivalTime = 0;
+    const arrivalDuration = 2300; // 1.7s solid glow + 0.6s smooth fade
+    let lastScrollTop = -1;
+    let settleFrames = 0;
+    const maxWaitTimeout = performance.now() + 7000;
 
     function updateFlash() {
       const scrollContainer = getScrollContainer();
       const scRect = scrollContainer.getBoundingClientRect();
-      const currentClientY = flashAbsoluteY - scrollContainer.scrollTop + scRect.top;
 
+      let currentAbsoluteY = flashAbsoluteY;
+      if (targetElement && targetElement.isConnected) {
+        const elRect = targetElement.getBoundingClientRect();
+        currentAbsoluteY = elRect.top - scRect.top + scrollContainer.scrollTop;
+      }
+
+      const currentClientY = currentAbsoluteY - scrollContainer.scrollTop + scRect.top;
       flash.style.top = `${currentClientY}px`;
 
-      if (performance.now() - startTime < duration) {
-        requestAnimationFrame(updateFlash);
+      const now = performance.now();
+
+      // Check arrival: target line is in the viewport and scroll has settled
+      const inView = currentClientY >= 50 && currentClientY <= window.innerHeight - 50;
+
+      const currentScroll = scrollContainer.scrollTop;
+      if (Math.abs(currentScroll - lastScrollTop) < 3) {
+        settleFrames++;
       } else {
-        flash.remove();
+        settleFrames = 0;
+      }
+      lastScrollTop = currentScroll;
+
+      const isSettled = settleFrames >= 3;
+      const timedOut = now > maxWaitTimeout;
+
+      if (!hasArrived) {
+        // Do NOT start fade countdown until user actually reaches the line!
+        if ((inView && isSettled) || timedOut) {
+          hasArrived = true;
+          arrivalTime = now;
+          flash.classList.add('arrived');
+        }
+        activeFlashAnim = requestAnimationFrame(updateFlash);
+      } else {
+        const elapsed = now - arrivalTime;
+        if (elapsed < arrivalDuration) {
+          activeFlashAnim = requestAnimationFrame(updateFlash);
+        } else {
+          flash.remove();
+          activeFlashAnim = null;
+        }
       }
     }
 
-    requestAnimationFrame(updateFlash);
+    activeFlashAnim = requestAnimationFrame(updateFlash);
   }
 
   // =========================================================================
