@@ -14,6 +14,10 @@
   Stop endlessly scrolling through 10,000-word Gemini sessions. Grab a pin from the floating dispenser pill, drag a glowing vertical laser guide over any line or turn, drop to bookmark, and glide back smoothly anytime.
 </p>
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Gemini Pinboard Demo" width="840" style="border-radius: 10px; box-shadow: 0 12px 36px rgba(0,0,0,0.5);" />
+</p>
+
 </div>
 
 ---
