@@ -226,7 +226,7 @@
     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
   </svg>`;
 
-  const SVG_CHECK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  const SVG_CHECK = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="20 6 9 17 4 12"></polyline>
   </svg>`;
 
@@ -287,20 +287,20 @@
       padding: 0 12px 0 13px;
       cursor: grab;
       border-radius: 20px 0 0 20px;
-      color: #60a5fa;
+      color: #c4c7c5;
       transition: background 0.15s ease, color 0.15s ease;
     }
 
     .pin-bucket-zone:hover {
       background: #2b2c2f;
-      color: #93c5fd;
+      color: #e3e3e3;
     }
 
     .pin-bucket-zone:active,
     .pin-bucket-zone.grabbing {
       cursor: grabbing;
       background: #2b2c2f;
-      color: #bfdbfe;
+      color: #ffffff;
     }
 
     .bucket-label {
@@ -350,10 +350,10 @@
       height: 18px;
       padding: 0 5px;
       border-radius: 9px;
-      background: rgba(96, 165, 250, 0.14);
-      color: #60a5fa;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e3e3e3;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 500;
       line-height: 1;
     }
 
@@ -455,9 +455,9 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #60a5fa;
+      background: #c4c7c5;
       flex-shrink: 0;
-      box-shadow: 0 0 6px rgba(96, 165, 250, 0.6);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
     }
 
     .pin-name {
@@ -509,8 +509,8 @@
 
     .pin-remove-btn:hover {
       opacity: 1;
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
     }
 
     /* Inline Rename Row */
@@ -526,13 +526,13 @@
       flex: 1;
       height: 24px;
       background: #141517;
-      border: 1px solid #60a5fa;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 4px;
       color: #e3e3e3;
       font-size: 12px;
       padding: 0 6px;
       outline: none;
-      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
     }
 
     /* Dragging Laser Guide & Floating Badge */
@@ -545,13 +545,13 @@
       z-index: 2147483645;
       background: linear-gradient(
         90deg,
-        rgba(96, 165, 250, 0) 0%,
-        rgba(96, 165, 250, 0.8) 15%,
-        rgba(96, 165, 250, 1) 50%,
-        rgba(96, 165, 250, 0.8) 85%,
-        rgba(96, 165, 250, 0) 100%
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.6) 15%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.6) 85%,
+        rgba(255, 255, 255, 0) 100%
       );
-      box-shadow: 0 0 10px rgba(96, 165, 250, 0.8), 0 0 20px rgba(96, 165, 250, 0.4);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(255, 255, 255, 0.15);
       display: none;
     }
 
@@ -561,12 +561,12 @@
       z-index: 2147483647;
       transform: translate(-50%, -130%);
       background: #1e1f20;
-      border: 1px solid rgba(96, 165, 250, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 12px;
       padding: 4px 10px;
       font-size: 11px;
       font-weight: 500;
-      color: #93c5fd;
+      color: #e3e3e3;
       display: none;
       align-items: center;
       gap: 5px;
@@ -584,12 +584,12 @@
       z-index: 2147483645;
       background: linear-gradient(
         90deg,
-        rgba(96, 165, 250, 0) 0%,
-        rgba(96, 165, 250, 1) 20%,
-        rgba(96, 165, 250, 1) 80%,
-        rgba(96, 165, 250, 0) 100%
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.85) 20%,
+        rgba(255, 255, 255, 0.85) 80%,
+        rgba(255, 255, 255, 0) 100%
       );
-      box-shadow: 0 0 14px rgba(96, 165, 250, 0.9), 0 0 28px rgba(96, 165, 250, 0.5);
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.5), 0 0 24px rgba(255, 255, 255, 0.2);
       animation: guidePulse 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
@@ -617,7 +617,7 @@
       z-index: 2147483647;
       pointer-events: auto;
       background: #1e1f20;
-      border: 1px solid rgba(96, 165, 250, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 10px;
       padding: 6px 8px;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -644,7 +644,7 @@
       width: 130px;
       height: 26px;
       background: #141517;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 6px;
       color: #e3e3e3;
       font-size: 12px;
@@ -654,25 +654,26 @@
     }
 
     .naming-popover input:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
     }
 
     .naming-popover button {
       height: 26px;
-      padding: 0 9px;
-      background: #60a5fa;
-      border: none;
+      padding: 0 10px;
+      background: #2b2c2f;
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 6px;
-      color: #0f172a;
+      color: #e3e3e3;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.15s ease;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
     .naming-popover button:hover {
-      background: #93c5fd;
+      background: #383a3e;
+      color: #ffffff;
     }
 
     /* Visual Pin Markers on Chat Right Edge */
@@ -690,10 +691,10 @@
     .page-pin-tick {
       width: 8px;
       height: 16px;
-      background: #60a5fa;
+      background: #8e918f;
       border-radius: 4px;
       cursor: pointer;
-      box-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
@@ -703,7 +704,8 @@
 
     .page-pin-marker:hover .page-pin-tick {
       width: 12px;
-      box-shadow: 0 0 12px rgba(96, 165, 250, 0.9);
+      background: #e3e3e3;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
     }
 
     .page-pin-hover-badge {
@@ -711,7 +713,7 @@
       align-items: center;
       gap: 6px;
       background: #1e1f20;
-      border: 1px solid rgba(96, 165, 250, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 12px;
       padding: 3px 8px 3px 10px;
       margin-right: 6px;
@@ -745,8 +747,8 @@
     }
 
     .page-pin-hover-delete:hover {
-      background: rgba(239, 68, 68, 0.2);
-      color: #f87171;
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
     }
   `;
   shadow.appendChild(styleEl);
@@ -810,8 +812,9 @@
 
   // State
   let pins = [];
-  let isDropdownOpen = false;
+  let isDropdownOpen = true;
   let activeDropData = null;
+  let dropTimestamp = 0;
   let isDragging = false;
   let autoScrollRaf = null;
   let currentPointerY = 0;
@@ -876,11 +879,17 @@
 
     if (count === 0) {
       dropdownToggle.classList.add('disabled');
-      isDropdownOpen = false;
       dropdownMenu.classList.remove('visible');
       chevronIcon.classList.remove('open');
     } else {
       dropdownToggle.classList.remove('disabled');
+      if (isDropdownOpen) {
+        dropdownMenu.classList.add('visible');
+        chevronIcon.classList.add('open');
+      } else {
+        dropdownMenu.classList.remove('visible');
+        chevronIcon.classList.remove('open');
+      }
     }
 
     renderDropdownList();
@@ -1286,11 +1295,9 @@
     currentPointerY = e.clientY;
     pinBucket.classList.add('grabbing');
 
-    // Close dropdown and naming popover if open
-    dropdownMenu.classList.remove('visible');
-    chevronIcon.classList.remove('open');
-    isDropdownOpen = false;
+    // Close naming popover if open
     namingPopover.style.display = 'none';
+    activeDropData = null;
 
     // Show guide elements
     laserGuide.style.display = 'block';
@@ -1330,7 +1337,7 @@
         return; // Canceled drop onto pill
       }
 
-      handleDropPin(upEvt.clientY);
+      handleDropPin(upEvt.clientX, upEvt.clientY);
     };
 
     const onKeyDown = (keyEvt) => {
@@ -1380,7 +1387,7 @@
     return `ping${maxNum + 1}`;
   }
 
-  function handleDropPin(dropClientY) {
+  function handleDropPin(dropClientX, dropClientY) {
     const dropData = capturePinTarget(dropClientY);
     const defaultName = calculateNextPingName();
 
@@ -1388,11 +1395,11 @@
       ...dropData,
       defaultName
     };
+    dropTimestamp = performance.now();
 
-    // Position naming popover near right chat edge at dropClientY
-    const chatBounds = getChatBounds();
-    const popoverX = Math.min(window.innerWidth - 240, Math.max(20, chatBounds.right - 200));
-    const popoverY = Math.max(60, Math.min(window.innerHeight - 80, dropClientY - 20));
+    // Position naming popover near drop point, clamped safely inside viewport
+    const popoverX = Math.min(window.innerWidth - 220, Math.max(16, dropClientX - 90));
+    const popoverY = Math.max(16, Math.min(window.innerHeight - 60, dropClientY - 20));
 
     namingPopover.style.left = `${popoverX}px`;
     namingPopover.style.top = `${popoverY}px`;
@@ -1402,7 +1409,7 @@
     setTimeout(() => {
       pinNameInput.focus();
       pinNameInput.select();
-    }, 10);
+    }, 20);
   }
 
   function commitNewPin() {
@@ -1430,6 +1437,7 @@
 
     // IMPORTANT: Always insert at VERY TOP (.unshift(newPin)), never sort by absoluteY
     pins.unshift(newPin);
+    isDropdownOpen = true; // Dropdown stays open when new pin is added
     persistPins();
 
     activeDropData = null;
@@ -1444,6 +1452,7 @@
       e.preventDefault();
       commitNewPin();
     } else if (e.key === 'Escape') {
+      e.preventDefault();
       activeDropData = null;
       namingPopover.style.display = 'none';
     }
@@ -1455,9 +1464,9 @@
   });
 
   pinNameInput.addEventListener('blur', (e) => {
-    // If clicking save button, let click handler run
     if (e.relatedTarget === savePinBtn) return;
-    if (activeDropData) {
+    // Commit only if click was outside after the popover was active
+    if (activeDropData && performance.now() - dropTimestamp > 400) {
       commitNewPin();
     }
   });
@@ -1470,6 +1479,7 @@
     e.stopPropagation();
     if (pins.length === 0) return;
 
+    // Toggle dropdown manually
     isDropdownOpen = !isDropdownOpen;
     if (isDropdownOpen) {
       dropdownMenu.classList.add('visible');
@@ -1482,21 +1492,14 @@
     }
   });
 
-  // Close dropdown on clicks outside
+  // Only commit naming popover if clicked outside after it has been displayed for > 400ms
   window.addEventListener('click', (e) => {
     const path = e.composedPath();
-    if (!path.includes(dispenserPill) && !path.includes(dropdownMenu)) {
-      if (isDropdownOpen) {
-        isDropdownOpen = false;
-        dropdownMenu.classList.remove('visible');
-        chevronIcon.classList.remove('open');
-        editingPinId = null;
-        renderDropdownList();
-      }
-    }
 
     if (activeDropData && !path.includes(namingPopover)) {
-      commitNewPin();
+      if (performance.now() - dropTimestamp > 400) {
+        commitNewPin();
+      }
     }
   });
 
