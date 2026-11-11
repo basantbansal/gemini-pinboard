@@ -1,108 +1,148 @@
-# Gemini Pinboard 📌
+<div align="center">
 
-A spatial **Pin Dispenser & Vertical Line Bookmarking** Chrome Extension (Manifest V3) purpose-built for [gemini.google.com](https://gemini.google.com).
+# 📌 Gemini Pinboard
 
-Gemini Pinboard transforms the conversation experience into a spatial workspace: grab a pin from the floating dispenser pill, drag a glowing vertical laser guide over any line or response turn, drop to bookmark with automatic naming (`ping1`, `ping2`, ...), and jump back smoothly at any time with an eye-locking visual flash.
+**Spatial Pin Dispenser & Vertical Line Bookmarking for Google Gemini**
 
----
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-success?style=flat-square&logo=google-chrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen?style=flat-square)](#architecture)
+[![Vanilla JS](https://img.shields.io/badge/Code-Vanilla%20JS-F7DF1E?style=flat-square&logo=javascript&logoColor=black)](#architecture)
+[![Design: Linear / Raycast](https://img.shields.io/badge/Design-Linear%20%2F%20Raycast-5E5CE6?style=flat-square)](#design-system)
 
-## Key Architectural Highlights
+<p align="center">
+  Stop endlessly scrolling through 10,000-word Gemini sessions. Grab a pin from the floating dispenser pill, drag a glowing vertical laser guide over any line or turn, drop to bookmark, and glide back smoothly anytime.
+</p>
 
-### 1. Gemini Scroll Architecture & Dynamic Detection
-On `gemini.google.com`, `window` is **not** the scrolling element. Gemini uses custom scrolling containers (`infinite-scroller`, `<main>`, or deep chat wrappers) where `overflow-y` is `auto` or `scroll`.
-- **Dynamic Scroll Container Detection (`getScrollContainer`)**: Walks up from conversation turns (`ms-chat-turn`, `user-query`, `model-response`, `message-content`, `infinite-scroller`) to find the exact DOM container where `overflowY === 'auto' | 'scroll'` and `scrollHeight > clientHeight`.
-- **Dual Vertical Anchoring (DOM Node + Exact Scroll Offset)**:
-  - Absolute vertical scroll offset:
-    $$\text{absoluteY} = \text{scrollContainer.scrollTop} + (\text{dropClientY} - \text{scrollContainer.top})$$
-  - Deep DOM leaf fingerprinting: captures candidate leaf elements (`clientHeight < 600`) via `document.elementsFromPoint(window.innerWidth / 2, dropClientY)` with text fingerprint (`textContent.trim().slice(0, 60)`) and relative element offset (`dropClientY - targetElement.top`).
-- **Accurate Jump Execution**:
-  - Searches for the leaf element by text fingerprint first, scrolling to `elementTopInScrollContainer + offsetWithinElement - (viewportHeight * 0.25)`.
-  - Fallbacks seamlessly to `absoluteY - (viewportHeight * 0.25)`.
-  - Flashes a glowing horizontal laser guide across the chat for **1.5 seconds**, immediately orienting the user's eye onto the exact line bookmarked.
-
-### 2. Interaction Flow
-- **Top-Right Dispenser Pill** (`top: 20px; right: 24px`):
-  - **Left Zone ("The Pin Bucket")**: Interactive grab zone with pin SVG icon (`cursor: grab`).
-  - **Right Zone ("Dropdown Toggle")**: Displays live pin count badge (e.g., `3`) and chevron (`▾`) toggling the single-line pin list.
-  - **Zero-Empty Space Rule**: If 0 pins exist, only the compact pill is rendered with zero empty list space below it.
-- **Vertical Laser Drag & Auto-Scroll**:
-  - Dragging from the Pin Bucket ignores horizontal `X` placement, locking only vertical `Y` (`e.clientY`).
-  - Sleek horizontal laser guide spans across the chat container width while a floating pin badge follows the cursor.
-  - Automatically auto-scrolls the chat container gently if dragging within 60px of viewport top or bottom.
-  - Pressing `Escape` cancels the drag cleanly.
-- **Instant Default Naming (`ping{N}`)**:
-  - Drops trigger an inline popover pre-filled and auto-selected with `ping{N}` (highest existing number + 1).
-  - Pressing `Enter` or clicking away/blur commits the pin instantly.
-  - Insertion always prepends (`.unshift(newPin)`), ensuring the **newest pin is always at the very top**.
-- **Visual Pin Markers on Page**:
-  - Subtle ticks anchored to the right edge of the chat column, continuously synced via `requestAnimationFrame` on scroll and layout changes.
-  - Hovering reveals the pin name badge and a quick `×` delete button.
-  - Clicking jumps directly to that vertical position.
-- **Single-Line Dropdown Menu (`240px`)**:
-  - Strict horizontal flex line layout (`height: 34px; padding: 0 10px; gap: 8px; white-space: nowrap;`).
-  - Left: 6px blue dot (`#60a5fa`) + truncated pin name.
-  - Right: Formatted creation time (`23:15`), inline Rename button (`✎`), and Remove button (`×`).
-  - Clicking any row smooth-scrolls and flashes the horizontal guide line.
-  - Auto-fits height up to 8 pins (scrollbar only when > 8 pins).
-
-### 3. Extension Context Invalidation Safeguards
-When reloaded in `chrome://extensions`, existing Gemini tabs become orphaned and normally throw `Error: Extension context invalidated`.
-- **Safe Storage Wrappers (`safeGet` & `safeSet`)**:
-  - Verifies `typeof chrome !== 'undefined' && chrome.runtime && !!chrome.runtime.id`.
-  - Synchronously mirrors all reads and writes to `window.localStorage`.
-  - Wraps `chrome.storage.local` in silent handlers that never log noisy errors.
-- **Clean Remounting**: Removes any existing `<gemini-pinboard-host>` from `document.body` before mounting new instances.
-
-### 4. UI & Aesthetic
-- Clean **Shadow DOM (`mode: 'open'`)** encapsulation prevents Gemini style leakage.
-- Styled with the Linear / Raycast dark theme palette:
-  - Surface: `#1e1f20`
-  - Elevated hover: `#2b2c2f`
-  - Border: `1px solid rgba(255, 255, 255, 0.08)`
-  - Text: `#e3e3e3`
-  - Muted: `#9aa0a6`
-  - Accent / Laser: `#60a5fa`
-  - Danger: `#f87171`
+</div>
 
 ---
 
-## Installation
+## 🌟 Why Gemini Pinboard?
 
-1. Open Google Chrome and navigate to:
-   ```text
-   chrome://extensions/
-   ```
-2. Enable **Developer mode** using the toggle switch in the top-right corner.
-3. Click **Load unpacked**.
-4. Select the directory:
-   ```text
-   /mnt/hdd/basant-data/Projects/gemini-pinboard-v2
-   ```
-5. Navigate to [gemini.google.com](https://gemini.google.com) and start bookmarking your conversation lines!
+Standard note-taking extensions extract text snippets into cluttered floating cards, severing the content from its original context. When having long research, code generation, or reasoning sessions in Google Gemini, you don't just want copied text—**you need to navigate back to the exact conversational moment where an idea happened.**
+
+**Gemini Pinboard** introduces a **spatial interaction model**:
+- **Drag & Drop Laser Ruler**: Grab a pin from the top-right dispenser bucket; a horizontal guide line tracks your cursor vertically across the chat.
+- **Zero-Clutter Index**: Dropping a pin records an instant single-line bookmark (`ping1`, `ping2`, or your custom label) with timestamps, inline renaming, and deletion.
+- **Arrival-Synchronized Visual Flash**: Clicking any bookmark smoothly glides Gemini's view to that exact line and fires an eye-locking light blue laser pulse that **waits until you arrive**.
+- **Sliding-Window Auto-Recovery**: Overcomes Gemini's dynamic DOM virtualization. If you jump to a pin in an older portion of the chat that Gemini closed/unloaded, the extension automatically detects the unmounted turn, triggers Gemini's loader, and glides right to it.
 
 ---
 
-## Extension Structure
+## 🚀 Key Features
 
-```text
-gemini-pinboard-v2/
-├── manifest.json      # Chrome Extension Manifest V3 configuration
-├── content.js         # Core logic: scroll detection, dual anchoring, Shadow DOM UI
-├── styles.css         # Page-level host styling
-├── icons/             # Clean modern extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md          # Documentation and engineering architecture
+| Feature | Description |
+| :--- | :--- |
+| **📌 Spatial Pin Dispenser** | Fixed top-right pill (`top: 20px; right: 24px`) with a grab-ready pushpin bucket and a live count badge. |
+| **⚡ 60fps Laser Drag Engine** | Hardware-accelerated pointer tracking using GPU `translate3d` with zero layout thrashing. |
+| **🏷️ Instant Naming Popover** | Drops prompt a sleek inline input pre-filled with incrementing defaults (`ping1`, `ping2`, ...). Press `Enter` to accept or type a custom heading. |
+| **📜 Scrollable Single-Line Dock** | Clean, distraction-free dropdown list. Rows never squish or compress—smooth custom scrollbar activates automatically for > 8 pins. |
+| **🎯 Sub-Pixel Anchor Engine** | Dual vertical anchoring pairs the container's absolute scroll offset with a fine-grained DOM leaf fingerprint (`<p>`, `<code>`, `<li>`). |
+| **💫 Arrival-Synced Light Blue Glow** | The arrival confirmation line stays armed during transit and only triggers its 1.7s solid glow + 0.6s fade **after your viewport has reached the line**. |
+| **🔄 Gemini DOM Virtualization Recovery** | Automatically navigates and observes DOM mutations when older chat turns need to be dynamically loaded from the server. |
+| **🛡️ Shadow DOM Isolation** | The entire interface mounts inside an isolated `ShadowRoot` (`mode: 'open'`), guaranteeing zero CSS bleeding or interference from Google Gemini's Tailwind styles. |
+| **🔒 Context Invalidation Shield** | Mirrors all state synchronously to `localStorage` alongside `chrome.storage.local`. Reloading the extension in Developer Mode never crashes your open tabs. |
+
+---
+
+## 🏗️ Architecture & Engineering
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Google Gemini Tab                       │
+│                                                             │
+│  [ ms-chat-turn / model-response / infinite-scroller ]      │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │ <gemini-pinboard-host> (Isolated Shadow DOM)        │   │
+│   │                                                     │   │
+│   │   [📌 Dispenser Pill]   [Dropdown Scrollable List]  │   │
+│   │            │                        │               │   │
+│   │      pointerdown                 click              │   │
+│   │            ▼                        ▼               │   │
+│   │   [Laser Guide Line]       [Smooth Jump Engine]     │   │
+│   │            │                        │               │   │
+│   │         pointerup                   │               │   │
+│   │            ▼                        ▼               │   │
+│   │   [Naming Popover]         [Arrival Sync & Flash]   │   │
+│   └─────────────────────────────────────────────────────┘   │
+│                                │                            │
+│                 ┌──────────────┴──────────────┐             │
+│                 ▼                             ▼             │
+│       chrome.storage.local            window.localStorage   │
+│       (Reactive Sync)                 (Instant Fallback)    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
+### Dynamic Scroll Container Detection
+`window` is **not** the scrolling element on `gemini.google.com`. Gemini wraps conversations inside custom scroll containers (`infinite-scroller`, deep `<main>` elements, or `.chat-history`).
+- The extension ascends from active conversation turns (`model-response`, `user-query`, `message-content`) and inspects computed `overflowY === 'auto' | 'scroll'` with `scrollHeight > clientHeight`.
+- Pins are stored per conversation URL: `gemini_pinboard_pins_${chatId}`. Switching conversations via Gemini's SPA router smoothly loads that conversation's pins with zero page reloads.
+
 ---
 
-## Controls & Keyboard Shortcuts
+## 📦 Installation (30 Seconds)
 
-- **Grab & Drag Pin Bucket**: Drag out to inspect the vertical laser guide line.
-- **Escape**: Cancel active drag or dismiss inline popover.
-- **Enter**: Confirm pin name in drop popover or inline rename input.
-- **Click Row / Tick**: Jump to bookmark with 1.5s visual guide line flash.
-- **Click ✎**: Inline rename pin.
-- **Click ×**: Delete pin.
+### Option 1: Load Unpacked in Chrome / Brave / Edge
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/basantbansal/gemini-pinboard.git
+   ```
+2. Open your Chromium browser and navigate to:
+   - **Chrome**: `chrome://extensions/`
+   - **Brave**: `brave://extensions/`
+   - **Edge**: `edge://extensions/`
+3. Toggle on **Developer mode** in the top-right corner.
+4. Click **Load unpacked** in the top-left corner.
+5. Select the cloned `gemini-pinboard` folder.
+6. Open [gemini.google.com](https://gemini.google.com) and start bookmarking!
+
+---
+
+## ⌨️ Controls & Interaction Guide
+
+| Action | How to Trigger |
+| :--- | :--- |
+| **Grab Pin** | Press and hold on the **📌 Pushpin** bucket in the top-right corner. |
+| **Laser Guide Ruler** | Drag your cursor vertically over the chat to view the alignment line. |
+| **Cancel Drag** | Press <kbd>Escape</kbd> or drag back over the dispenser pill. |
+| **Drop & Bookmark** | Release the mouse at any vertical position. |
+| **Confirm Default Name** | Press <kbd>Enter</kbd> (or click **Save**) to accept `ping1`, `ping2`, etc. |
+| **Custom Bookmark Heading** | Type your desired title into the popover and press <kbd>Enter</kbd>. |
+| **Jump to Pin** | Click any pin row in the dropdown list or click the tick marker on the right margin. |
+| **Rename Pin** | Click the **✎** pencil icon on any row to edit inline. |
+| **Delete Pin** | Click the **×** button on any row or hover-badge. |
+| **Toggle Menu** | Click the right side of the dispenser pill (counter badge & chevron). |
+
+---
+
+## 🎨 Design System
+
+Styled according to modern minimalist product software design guidelines (inspired by **Linear** and **Raycast**):
+
+- **Palette**: Surface `#1e1f20`, Elevated hover `#2b2c2f`, Border `rgba(255, 255, 255, 0.08)`, Text `#e3e3e3`, Muted `#9aa0a6`.
+- **Laser & Flash Accent**: Soft, eye-pleasing light blue (`rgba(147, 197, 253, ...)`) providing clean contrast without visual distraction.
+- **Typography**: System font stack (`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`), weights 400 and 500 only. Tabular monospace numbers for timestamps.
+- **Zero Distraction**: No saturated neon gradients, no bounce physics, and no emojis in UI labels. Clean 2px inline SVGs.
+
+---
+
+## 🔒 Privacy & Local-First Security
+
+- **100% Local**: All pin labels, timestamps, and scroll coordinates are stored strictly inside your browser's local sandbox (`chrome.storage.local` and `localStorage`).
+- **Zero Network Requests**: Does not make external network requests, send telemetry, track usage, or communicate with remote servers.
+- **Zero Untrusted HTML**: Safe DOM element construction (`createElement`, `textContent`) preventing XSS.
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+
+---
+
+<div align="center">
+  <sub>Crafted with precision for productive minds navigating long AI conversations.</sub>
+</div>
