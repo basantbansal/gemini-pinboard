@@ -1078,18 +1078,28 @@
   function findPinElement(pin) {
     if (!pin || !pin.fingerprint) return null;
     const scrollContainer = getScrollContainer();
-    const candidates = scrollContainer.querySelectorAll(
-      'p, li, code, pre, h1, h2, h3, h4, h5, h6, blockquote, div, span, message-content, [class*="content"]'
-    );
+    const selectors = [
+      'code', 'pre', 'p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'span', 'div', 'message-content'
+    ];
+    const candidates = scrollContainer.querySelectorAll(selectors.join(', '));
+
+    let bestMatch = null;
+    let smallestArea = Infinity;
+
     for (const el of candidates) {
       if (el.clientHeight > 0 && el.clientHeight < 600 && el.textContent) {
         const txt = el.textContent.trim().slice(0, 60);
         if (txt === pin.fingerprint) {
-          return el;
+          // Select most specific innermost element (matching elementsFromPoint behavior)
+          const area = el.clientWidth * el.clientHeight;
+          if (area < smallestArea) {
+            smallestArea = area;
+            bestMatch = el;
+          }
         }
       }
     }
-    return null;
+    return bestMatch;
   }
 
   function jumpToPin(pin) {
@@ -1116,7 +1126,7 @@
         behavior: 'smooth'
       });
 
-      flashHorizontalLine(flashAbsoluteY, matchedElement);
+      flashHorizontalLine(flashAbsoluteY, matchedElement, pin.offsetWithinElement || 0);
       return;
     }
 
@@ -1167,7 +1177,7 @@
           behavior: 'smooth'
         });
 
-        flashHorizontalLine(liveAbsoluteY, foundEl);
+        flashHorizontalLine(liveAbsoluteY, foundEl, pin.offsetWithinElement || 0);
       } else if (isAbove && scrollContainer.scrollTop > 40) {
         // Continue triggering top loader if multi-step paging is needed
         scrollContainer.scrollTop = 0;
@@ -1189,7 +1199,7 @@
     }, 9000);
   }
 
-  function flashHorizontalLine(flashAbsoluteY, targetElement) {
+  function flashHorizontalLine(flashAbsoluteY, targetElement, offsetWithinElement = 0) {
     if (activeFlashAnim) {
       cancelAnimationFrame(activeFlashAnim);
       activeFlashAnim = null;
@@ -1220,7 +1230,7 @@
       let currentAbsoluteY = flashAbsoluteY;
       if (targetElement && targetElement.isConnected) {
         const elRect = targetElement.getBoundingClientRect();
-        currentAbsoluteY = elRect.top - scRect.top + scrollContainer.scrollTop;
+        currentAbsoluteY = elRect.top - scRect.top + scrollContainer.scrollTop + (offsetWithinElement || 0);
       }
 
       const currentClientY = currentAbsoluteY - scrollContainer.scrollTop + scRect.top;
@@ -1333,21 +1343,7 @@
       }
 
       let clientY;
-      let matchedEl = null;
-      if (pin.fingerprint) {
-        const candidates = scrollContainer.querySelectorAll(
-          'p, li, code, pre, h1, h2, h3, h4, h5, h6, span, blockquote, div'
-        );
-        for (const el of candidates) {
-          if (el.clientHeight < 600 && el.textContent) {
-            const txt = el.textContent.trim().slice(0, 60);
-            if (txt === pin.fingerprint) {
-              matchedEl = el;
-              break;
-            }
-          }
-        }
-      }
+      const matchedEl = findPinElement(pin);
 
       if (matchedEl) {
         const elRect = matchedEl.getBoundingClientRect();
