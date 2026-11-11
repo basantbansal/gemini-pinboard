@@ -231,8 +231,7 @@
   </svg>`;
 
   const SVG_CLOSE = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
+    <path d="M18 6L6 18M6 6l12 12"></path>
   </svg>`;
 
   // Encapsulated Shadow DOM Styles
@@ -404,7 +403,8 @@
       display: flex;
       flex-direction: column;
       max-height: 272px; /* 8 rows * 34px = 272px */
-      overflow-y: auto;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       overscroll-behavior: contain;
     }
 
@@ -417,26 +417,30 @@
     }
 
     .pins-scroll-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.16);
       border-radius: 4px;
     }
 
     .pins-scroll-list::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.28);
     }
 
-    /* STRICT SINGLE-LINE PIN ROW */
+    /* STRICT SINGLE-LINE PIN ROW (NO COMPRESSION) */
     .pin-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       height: 34px;
+      min-height: 34px;
+      max-height: 34px;
+      flex-shrink: 0;
       padding: 0 10px;
       gap: 8px;
       white-space: nowrap;
       cursor: pointer;
       transition: background 0.12s ease;
       position: relative;
+      box-sizing: border-box;
     }
 
     .pin-row:hover {
@@ -1024,13 +1028,19 @@
   // 6. DUAL VERTICAL ANCHORING & ACCURATE JUMP EXECUTION
   // =========================================================================
 
-  function capturePinTarget(dropClientY) {
+  function capturePinTarget(dropClientX, dropClientY) {
     const scrollContainer = getScrollContainer();
     const scRect = scrollContainer.getBoundingClientRect();
     const absoluteY = scrollContainer.scrollTop + (dropClientY - scRect.top);
 
+    const chatBounds = getChatBounds();
+    const sampleX =
+      dropClientX && dropClientX > 50 && dropClientX < window.innerWidth - 50
+        ? dropClientX
+        : (chatBounds.left + chatBounds.right) / 2;
+
     // Filter elements at the vertical line
-    const elements = document.elementsFromPoint(window.innerWidth / 2, dropClientY) || [];
+    const elements = document.elementsFromPoint(sampleX, dropClientY) || [];
     let targetElement = null;
 
     for (const el of elements) {
@@ -1111,92 +1121,89 @@
     const scrollContainer = getScrollContainer();
     const viewportHeight = window.innerHeight;
 
-    // 1. Check if the element is currently rendered in the DOM
+    let targetScrollTop;
+    let flashAbsoluteY;
+    let targetEl = null;
+
+    // 1. Try to find the element in current DOM
     const matchedElement = findPinElement(pin);
 
     if (matchedElement) {
+      targetEl = matchedElement;
       const elRect = matchedElement.getBoundingClientRect();
       const scRect = scrollContainer.getBoundingClientRect();
       const elementTop = elRect.top - scRect.top + scrollContainer.scrollTop;
-      const flashAbsoluteY = elementTop + (pin.offsetWithinElement || 0);
-      const targetScrollTop = Math.max(0, flashAbsoluteY - viewportHeight * 0.25);
-
-      scrollContainer.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth'
-      });
-
-      flashHorizontalLine(flashAbsoluteY, matchedElement, pin.offsetWithinElement || 0);
-      return;
+      flashAbsoluteY = elementTop + (pin.offsetWithinElement || 0);
+      targetScrollTop = Math.max(0, flashAbsoluteY - viewportHeight * 0.25);
+    } else {
+      // 2. ALWAYS target pin.absoluteY! Never scroll blindly to 0!
+      flashAbsoluteY = pin.absoluteY;
+      targetScrollTop = Math.max(0, pin.absoluteY - viewportHeight * 0.25);
     }
 
-    // 2. Element NOT in current DOM (Gemini closed/virtualized older chat above)
-    // Scroll towards top (or bottom) to trigger Gemini sliding window loader
-    const isAbove = (pin.absoluteY || 0) < scrollContainer.scrollTop;
-    const initialTargetScrollTop = isAbove ? 0 : scrollContainer.scrollHeight;
-
+    // Scroll directly and smoothly to the destination!
     scrollContainer.scrollTo({
-      top: initialTargetScrollTop,
+      top: targetScrollTop,
       behavior: 'smooth'
     });
 
-    flashHorizontalLine(pin.absoluteY, null);
+    flashHorizontalLine(flashAbsoluteY, targetEl, pin.offsetWithinElement || 0);
 
-    // Watch for Gemini loading older chat turns into the DOM
-    let isCleanedUp = false;
-    let observer = null;
-    let pollInterval = null;
-    let timeoutId = null;
+    // 3. Sliding Window / Virtual Scroll Handler
+    // If the element was not found in DOM when clicked (e.g. Gemini closed older chat),
+    // watch for Gemini prepending turns while scrolling near top
+    if (!matchedElement && pin.fingerprint) {
+      let isCleanedUp = false;
+      let observer = null;
+      let pollInterval = null;
+      let timeoutId = null;
 
-    const cleanup = () => {
-      if (isCleanedUp) return;
-      isCleanedUp = true;
-      if (observer) observer.disconnect();
-      if (pollInterval) clearInterval(pollInterval);
-      if (timeoutId) clearTimeout(timeoutId);
-      if (activeNavigationCleanup === cleanup) {
-        activeNavigationCleanup = null;
-      }
-    };
-    activeNavigationCleanup = cleanup;
+      const cleanup = () => {
+        if (isCleanedUp) return;
+        isCleanedUp = true;
+        if (observer) observer.disconnect();
+        if (pollInterval) clearInterval(pollInterval);
+        if (timeoutId) clearTimeout(timeoutId);
+        if (activeNavigationCleanup === cleanup) {
+          activeNavigationCleanup = null;
+        }
+      };
+      activeNavigationCleanup = cleanup;
 
-    const checkAndJump = () => {
-      if (isCleanedUp) return;
-      const foundEl = findPinElement(pin);
-      if (foundEl) {
-        // Element has just been loaded into DOM by Gemini!
+      const checkForLoadedElement = () => {
+        if (isCleanedUp) return;
+        const found = findPinElement(pin);
+        if (found) {
+          cleanup();
+          const elRect = found.getBoundingClientRect();
+          const scRect = scrollContainer.getBoundingClientRect();
+          const elementTop = elRect.top - scRect.top + scrollContainer.scrollTop;
+          const liveAbsoluteY = elementTop + (pin.offsetWithinElement || 0);
+          const liveTargetScrollTop = Math.max(0, liveAbsoluteY - viewportHeight * 0.25);
+
+          scrollContainer.scrollTo({
+            top: liveTargetScrollTop,
+            behavior: 'smooth'
+          });
+
+          flashHorizontalLine(liveAbsoluteY, found, pin.offsetWithinElement || 0);
+        }
+      };
+
+      observer = new MutationObserver(() => {
+        checkForLoadedElement();
+      });
+
+      try {
+        observer.observe(scrollContainer, { childList: true, subtree: true });
+      } catch (_) {}
+
+      pollInterval = setInterval(checkForLoadedElement, 300);
+
+      timeoutId = setTimeout(() => {
         cleanup();
-        const elRect = foundEl.getBoundingClientRect();
-        const scRect = scrollContainer.getBoundingClientRect();
-        const liveTop = elRect.top - scRect.top + scrollContainer.scrollTop;
-        const liveAbsoluteY = liveTop + (pin.offsetWithinElement || 0);
-        const liveTargetScrollTop = Math.max(0, liveAbsoluteY - viewportHeight * 0.25);
-
-        scrollContainer.scrollTo({
-          top: liveTargetScrollTop,
-          behavior: 'smooth'
-        });
-
-        flashHorizontalLine(liveAbsoluteY, foundEl, pin.offsetWithinElement || 0);
-      } else if (isAbove && scrollContainer.scrollTop > 40) {
-        // Continue triggering top loader if multi-step paging is needed
-        scrollContainer.scrollTop = 0;
-      }
-    };
-
-    observer = new MutationObserver(() => {
-      checkAndJump();
-    });
-
-    try {
-      observer.observe(scrollContainer, { childList: true, subtree: true });
-    } catch (_) {}
-
-    pollInterval = setInterval(checkAndJump, 250);
-
-    timeoutId = setTimeout(() => {
-      cleanup();
-    }, 9000);
+      }, 7000);
+    }
   }
 
   function flashHorizontalLine(flashAbsoluteY, targetElement, offsetWithinElement = 0) {
@@ -1511,7 +1518,7 @@
   }
 
   function handleDropPin(dropClientX, dropClientY) {
-    const dropData = capturePinTarget(dropClientY);
+    const dropData = capturePinTarget(dropClientX, dropClientY);
     const defaultName = calculateNextPingName();
 
     activeDropData = {
